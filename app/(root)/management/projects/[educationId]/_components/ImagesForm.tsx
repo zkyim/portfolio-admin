@@ -2,25 +2,15 @@
 import axios from "axios"
 import { toast } from "sonner"
 import { Button } from '@/components/ui/button';
-import React, { useState } from 'react'
+import React, { FormEvent, useEffect, useState } from 'react'
 import { useTranslation } from "react-i18next"
 import { Loader } from "lucide-react"
 import { UploadDropzone } from "@/lib/uploadthing"
 import { Image as ImageType } from "@prisma/client";
-import { zodResolver } from "@hookform/resolvers/zod"
-import { useForm } from "react-hook-form"
-import { z } from "zod"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
-import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from "@/components/ui/form"
 import ImagesContainer from "./ImagesContainer";
 import { useRouter } from "next/navigation";
+import { Label } from "@/components/ui/label";
 
 interface TitleFormProps {
   id: string;
@@ -42,15 +32,10 @@ const TitleForm = ({
     .then((data) => {router.refresh();})
     .catch(() => {console.log(t("Something went wrong"))})
   }
-  let mainImage = "";
-  images?.forEach(image => {if(image.isMain) mainImage = image.id });
-  let values: any[] = [];
-  images?.forEach(image => {return values.push(image.id)})
-
-  const FormSchema = z.object({
-    // update type of enum to eny.
-    type: z.enum(values),
-  });
+  const [mainImage, setMainImage] = useState("");
+  useEffect(() => {
+    images?.forEach(image => {if(image.isMain) setMainImage(image.id) });
+  }, [images])
 
   const deleteImage = (e: any,imageId: string) => {
     e.stopPropagation();
@@ -64,14 +49,11 @@ const TitleForm = ({
     .catch(() => toast.error(t("Something went wrong")))
     .finally(() => setLoadingDelete(false))
   }
-     
-  const form = useForm<z.infer<typeof FormSchema>>({
-    resolver: zodResolver(FormSchema),
-  })
-    
-  function onSubmit(values: z.infer<typeof FormSchema>) {
+
+  function onSubmit(e: FormEvent<HTMLFormElement>) {
+    e.preventDefault();
     setIsLoading(true);
-    axios.post(`/api/project/${id}/images/${values.type}/main`)
+    axios.post(`/api/project/${id}/images/${mainImage}/main`)
     .then(() => {
       toast.success(t("Massege_Updated", {var: t("Image")}))
     })
@@ -110,51 +92,41 @@ const TitleForm = ({
                 :<>{t("Empty")}</>
           : (
             <>
-              <Form {...form}>
-                <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-                  <FormField
-                    control={form.control}
-                    name="type"
-                    render={({ field }) => (
-                      <FormItem className="space-y-3">
-                        <FormLabel>{t("Message_upload")}</FormLabel>
-                        <FormControl>
-                          <RadioGroup
-                            onValueChange={field.onChange}
-                            defaultValue={mainImage}
-                            className="flex flex-wrap items-center justify-center gap-2"
-                          >
-                            {isLoadingDelete && <div className="absolute bg-slate-50/70 rounded-md flex items-center justify-center inset-0 w-full h-full z-20"><Loader className="w-6 h-6 animate-spin"/></div>}
-                            {images?.map((image) => (
-                            <FormItem key={image.id} className="relative cursor-pointer">
-                                <FormControl className="absolute top-1 right-1 z-10">
-                                  <RadioGroupItem value={image.id}/>
-                                </FormControl>
-                              <FormLabel className="font-normal">
-                                <ImagesContainer
-                                  id={image.id}
-                                  onDelete={(e) => deleteImage(e, image.id)}
-                                  src={image.source}
-                                  projectId={id}
-                                />
-                              </FormLabel>
-                            </FormItem>
-                            ))}
-                          </RadioGroup>
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <UploadDropzone
-                    endpoint="imagesUploader"
-                    onClientUploadComplete={(res) => {  
-                      uploadImages(res);
-                    }}
-                  />
-                  <Button disabled={isLoading} type="submit">{t("Save")}</Button>
-                </form>
-              </Form>
+              <form onSubmit={(e) => onSubmit(e)} className="space-y-6">
+                <Label>{t("Message_upload")}</Label>
+                <RadioGroup
+                  defaultValue={mainImage}
+                  className="flex flex-wrap items-center justify-center gap-2"
+                >
+                  {isLoadingDelete && <div className="absolute bg-slate-50/70 rounded-md flex items-center justify-center inset-0 w-full h-full z-20"><Loader className="w-6 h-6 animate-spin"/></div>}
+                  {images?.map((image) => (
+                    <div key={image.id}>                              
+                      <Label htmlFor={image.id} className="relative font-normal">
+                        <RadioGroupItem 
+                          id={image.id} 
+                          value={image.id} 
+                          className="absolute top-1 right-1 z-30"
+                          checked={image.id === mainImage}
+                          onClick={() => setMainImage(image.id)}
+                        />
+                        <ImagesContainer
+                          id={image.id}
+                          onDelete={(e) => deleteImage(e, image.id)}
+                          src={image.source}
+                          projectId={id}
+                        />
+                      </Label>
+                    </div>
+                  ))}
+                </RadioGroup>
+                <UploadDropzone
+                  endpoint="imagesUploader"
+                  onClientUploadComplete={(res) => {  
+                    uploadImages(res);
+                  }}
+                />
+                <Button disabled={isLoading} type="submit">{t("Save")}</Button>
+              </form>
             </>
           )}
         </div>

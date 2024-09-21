@@ -41,7 +41,7 @@ const ImagesContainer = ({
                     fill
                 />
             </div>
-            <Button variant={'destructive'} onClick={(e) => hadleDelete(e)} className="absolute inset-1 px-1 py-1.5 w-fit h-fit cursor-pointer rounded-md">
+            <Button type='button' variant={'destructive'} onClick={(e) => hadleDelete(e)} className="absolute inset-1 px-1 py-1.5 w-fit h-fit cursor-pointer rounded-md">
                 <Trash className="w-4 h-4 text-white"/>
             </Button>
         </div>
