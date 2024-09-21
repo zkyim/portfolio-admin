@@ -4,8 +4,8 @@ import { NextResponse } from "next/server";
 export async function GET( req: Request ) {
     try {
         const { searchParams } = new URL(req.url);
-        const description = searchParams.get('description');
-        const title = searchParams.get('title');
+        const description = searchParams.get('description') || undefined;
+        const title = searchParams.get('title') || undefined;
 
         const projects = await db.project.findMany({
             where: {
